@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ناب</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:tahoma;
+}
+
+body{
+background:linear-gradient(135deg,#2b0057,#4b0082,#6a0dad);
+height:100vh;
+overflow:hidden;
+}
+
+#logo{
+position:absolute;
+top:20px;
+width:100%;
+text-align:center;
+font-size:50px;
+font-weight:bold;
+color:white;
+text-shadow:0 0 20px #d18fff;
+}
+
+#score{
+position:absolute;
+top:20px;
+right:20px;
+font-size:25px;
+color:white;
+font-weight:bold;
+}
+
+#player{
+position:absolute;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+font-size:55px;
+}
+
+.coin{
+position:absolute;
+font-size:35px;
+animation:fall linear;
+}
+
+@keyframes fall{
+from{
+transform:translateY(-50px);
+}
+to{
+transform:translateY(110vh);
+}
+}
+
+#gameover{
+display:none;
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+background:rgba(0,0,0,.8);
+padding:25px;
+border-radius:20px;
+color:white;
+text-align:center;
+}
+
+button{
+padding:10px 20px;
+border:none;
+border-radius:10px;
+margin-top:10px;
+font-size:18px;
+cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div id="logo">ناب</div>
+<div id="score">💰 0</div>
+
+<div id="player">🟣</div>
+
+<div id="gameover">
+<h2>بازی تمام شد</h2>
+<p id="finalscore"></p>
+<button onclick="location.reload()">شروع مجدد</button>
+</div>
+
+<script>
+
+let score = 0;
+let gameRunning = true;
+
+const player = document.getElementById("player");
+const scoreBox = document.getElementById("score");
+
+let playerX = window.innerWidth/2;
+
+document.addEventListener("mousemove",e=>{
+playerX=e.clientX;
+player.style.left=playerX+"px";
+});
+
+document.addEventListener("touchmove",e=>{
+playerX=e.touches[0].clientX;
+player.style.left=playerX+"px";
+});
+
+function createCoin(){
+
+if(!gameRunning) return;
+
+const coin=document.createElement("div");
+coin.className="coin";
+coin.innerHTML="🪙";
+
+const x=Math.random()*(window.innerWidth-40);
+
+coin.style.left=x+"px";
+coin.style.top="-40px";
+coin.style.animationDuration="4s";
+
+document.body.appendChild(coin);
+
+let move=setInterval(()=>{
+
+const c=coin.getBoundingClientRect();
+const p=player.getBoundingClientRect();
+
+if(
+c.left < p.right &&
+c.right > p.left &&
+c.top < p.bottom &&
+c.bottom > p.top
+){
+score++;
+scoreBox.innerHTML="💰 "+score;
+coin.remove();
+clearInterval(move);
+}
+
+if(c.top>window.innerHeight){
+coin.remove();
+clearInterval(move);
+}
+
+},20);
+}
+
+setInterval(createCoin,800);
+
+setTimeout(()=>{
+
+gameRunning=false;
+
+document.getElementById("gameover").style.display="block";
+document.getElementById("finalscore").innerHTML=
+"امتیاز شما: "+score;
+
+let best=localStorage.getItem("best") || 0;
+
+if(score>best){
+localStorage.setItem("best",score);
+}
+
+document.getElementById("finalscore").innerHTML +=
+"<br>🏆 رکورد: "+localStorage.getItem("best");
+
+},30000);
+
+</script>
+
+</body>
+</html>
