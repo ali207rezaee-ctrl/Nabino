@@ -1,187 +1,385 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<!DOCTYPE html><html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ناب</title>
-
-<style>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>نابینو</title><style>
 *{
 margin:0;
 padding:0;
 box-sizing:border-box;
-font-family:tahoma;
+font-family:tahoma,sans-serif;
 }
 
 body{
-background:linear-gradient(135deg,#2b0057,#4b0082,#6a0dad);
-height:100vh;
+background:#2a0050;
 overflow:hidden;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
 }
 
-#logo{
-position:absolute;
-top:20px;
-width:100%;
-text-align:center;
-font-size:50px;
-font-weight:bold;
-color:white;
-text-shadow:0 0 20px #d18fff;
-}
-
-#score{
-position:absolute;
-top:20px;
-right:20px;
-font-size:25px;
-color:white;
-font-weight:bold;
-}
-
-#player{
-position:absolute;
-bottom:20px;
-left:50%;
-transform:translateX(-50%);
-font-size:55px;
-}
-
-.coin{
-position:absolute;
-font-size:35px;
-animation:fall linear;
-}
-
-@keyframes fall{
-from{
-transform:translateY(-50px);
-}
-to{
-transform:translateY(110vh);
-}
-}
-
-#gameover{
-display:none;
-position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-background:rgba(0,0,0,.8);
-padding:25px;
+#gameContainer{
+position:relative;
+width:360px;
+height:640px;
+overflow:hidden;
 border-radius:20px;
+background:linear-gradient(to bottom,#5f1b99,#2b004f);
+box-shadow:0 0 25px rgba(180,80,255,.6);
+}
+
+canvas{
+display:block;
+}
+
+#startScreen,
+#gameOver{
+position:absolute;
+inset:0;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+background:rgba(0,0,0,.45);
 color:white;
+z-index:10;
 text-align:center;
+padding:20px;
+}
+
+.hidden{
+display:none !important;
+}
+
+h1{
+font-size:42px;
+margin-bottom:15px;
+text-shadow:0 0 15px #d29cff;
 }
 
 button{
-padding:10px 20px;
 border:none;
-border-radius:10px;
-margin-top:10px;
+padding:12px 25px;
+border-radius:12px;
 font-size:18px;
 cursor:pointer;
+background:#a84cff;
+color:white;
+margin-top:15px;
 }
-</style>
-</head>
 
-<body>
+button:active{
+transform:scale(.97);
+}
 
-<div id="logo">ناب</div>
-<div id="score">💰 0</div>
+#scoreBox{
+position:absolute;
+top:10px;
+left:0;
+right:0;
+text-align:center;
+color:#fff;
+font-size:24px;
+font-weight:bold;
+text-shadow:0 0 10px #fff;
+z-index:5;
+}
 
-<div id="player">🟣</div>
+#message{
+position:absolute;
+top:70px;
+width:100%;
+text-align:center;
+color:#fff;
+font-size:22px;
+font-weight:bold;
+text-shadow:0 0 10px #fff;
+z-index:5;
+}
+</style></head><body><div id="gameContainer"><div id="scoreBox">0</div>
+<div id="message"></div><div id="startScreen">
+<h1>نابینو</h1>
+<p>برای پرواز لمس کن</p>
+<button onclick="startGame()">شروع بازی</button>
+</div><div id="gameOver" class="hidden">
+<h2>بازی تمام شد 😅</h2>
+<br>
+<p id="finalScore"></p>
+<p id="bestScore"></p>
+<button onclick="restartGame()">شروع مجدد</button>
+</div><canvas id="game" width="360" height="640"></canvas>
 
-<div id="gameover">
-<h2>بازی تمام شد</h2>
-<p id="finalscore"></p>
-<button onclick="location.reload()">شروع مجدد</button>
-</div>
+</div><script>
 
-<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-let score = 0;
-let gameRunning = true;
+const scoreBox = document.getElementById("scoreBox");
+const messageBox = document.getElementById("message");
 
-const player = document.getElementById("player");
-const scoreBox = document.getElementById("score");
+let bird;
+let pipes;
+let score;
+let gameRunning=false;
+let animation;
 
-let playerX = window.innerWidth/2;
+const messages=[
+"عالیه! 🟣",
+"نابی شدی! 💜",
+"ترکوندی! 🚀",
+"ادامه بده! 🔥",
+"قهرمان ناب! 👑",
+"فوق‌العاده بود! ⭐",
+"دمت گرم! 😎"
+];
 
-document.addEventListener("mousemove",e=>{
-playerX=e.clientX;
-player.style.left=playerX+"px";
+function init(){
+
+bird={
+x:90,
+y:250,
+size:18,
+velocity:0
+};
+
+pipes=[];
+
+score=0;
+
+scoreBox.innerText="0";
+
+for(let i=0;i<3;i++){
+
+createPipe(450+(i*220));
+
+}
+}
+
+function createPipe(x){
+
+const gap=150;
+
+const topHeight=
+Math.random()*220+80;
+
+pipes.push({
+x:x,
+top:topHeight,
+bottom:topHeight+gap,
+passed:false
 });
 
-document.addEventListener("touchmove",e=>{
-playerX=e.touches[0].clientX;
-player.style.left=playerX+"px";
-});
+}
 
-function createCoin(){
+function startGame(){
+
+document
+.getElementById("startScreen")
+.classList.add("hidden");
+
+document
+.getElementById("gameOver")
+.classList.add("hidden");
+
+init();
+
+gameRunning=true;
+
+update();
+
+}
+
+function restartGame(){
+
+cancelAnimationFrame(animation);
+
+startGame();
+
+}
+
+function update(){
 
 if(!gameRunning) return;
 
-const coin=document.createElement("div");
-coin.className="coin";
-coin.innerHTML="🪙";
+animation=requestAnimationFrame(update);
 
-const x=Math.random()*(window.innerWidth-40);
+ctx.clearRect(
+0,
+0,
+canvas.width,
+canvas.height
+);
 
-coin.style.left=x+"px";
-coin.style.top="-40px";
-coin.style.animationDuration="4s";
+bird.velocity+=0.4;
+bird.y+=bird.velocity;
 
-document.body.appendChild(coin);
+ctx.beginPath();
+ctx.fillStyle="#d58cff";
+ctx.shadowBlur=15;
+ctx.shadowColor="#fff";
+ctx.arc(
+bird.x,
+bird.y,
+bird.size,
+0,
+Math.PI*2
+);
+ctx.fill();
 
-let move=setInterval(()=>{
+ctx.shadowBlur=0;
 
-const c=coin.getBoundingClientRect();
-const p=player.getBoundingClientRect();
+for(let pipe of pipes){
+
+pipe.x-=3;
+
+ctx.fillStyle="#7b2dff";
+
+ctx.fillRect(
+pipe.x,
+0,
+55,
+pipe.top
+);
+
+ctx.fillRect(
+pipe.x,
+pipe.bottom,
+55,
+640-pipe.bottom
+);
 
 if(
-c.left < p.right &&
-c.right > p.left &&
-c.top < p.bottom &&
-c.bottom > p.top
+bird.x+bird.size>pipe.x &&
+bird.x-bird.size<pipe.x+55 &&
+(
+bird.y-bird.size<pipe.top ||
+bird.y+bird.size>pipe.bottom
+)
 ){
+
+endGame();
+
+}
+
+if(
+!pipe.passed &&
+pipe.x+55<bird.x
+){
+
+pipe.passed=true;
+
 score++;
-scoreBox.innerHTML="💰 "+score;
-coin.remove();
-clearInterval(move);
+
+scoreBox.innerText=score;
+
+if(score%2===0){
+
+showMessage(
+messages[
+Math.floor(
+Math.random()*
+messages.length
+)
+]
+);
+
 }
 
-if(c.top>window.innerHeight){
-coin.remove();
-clearInterval(move);
 }
 
-},20);
 }
 
-setInterval(createCoin,800);
+if(
+pipes[0].x<-60
+){
+
+pipes.shift();
+
+createPipe(
+pipes[pipes.length-1].x+220
+);
+
+}
+
+if(
+bird.y<0 ||
+bird.y>640
+){
+
+endGame();
+
+}
+
+}
+
+function showMessage(text){
+
+messageBox.innerText=text;
 
 setTimeout(()=>{
+messageBox.innerText="";
+},1200);
+
+}
+
+function endGame(){
 
 gameRunning=false;
 
-document.getElementById("gameover").style.display="block";
-document.getElementById("finalscore").innerHTML=
-"امتیاز شما: "+score;
+cancelAnimationFrame(animation);
 
-let best=localStorage.getItem("best") || 0;
+let best=
+localStorage.getItem("nabino_best") || 0;
 
 if(score>best){
-localStorage.setItem("best",score);
+
+best=score;
+
+localStorage.setItem(
+"nabino_best",
+score
+);
+
 }
 
-document.getElementById("finalscore").innerHTML +=
-"<br>🏆 رکورد: "+localStorage.getItem("best");
+document
+.getElementById("finalScore")
+.innerText=
+"امتیاز: "+score;
 
-},30000);
+document
+.getElementById("bestScore")
+.innerText=
+"رکورد: "+best;
 
-</script>
+document
+.getElementById("gameOver")
+.classList.remove("hidden");
 
-</body>
+}
+
+function flap(){
+
+if(!gameRunning) return;
+
+bird.velocity=-7;
+
+}
+
+canvas.addEventListener(
+"click",
+flap
+);
+
+document.addEventListener(
+"touchstart",
+()=>{
+if(gameRunning){
+bird.velocity=-7;
+}
+}
+);
+
+</script></body>
 </html>
