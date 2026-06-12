@@ -1,37 +1,43 @@
-const chat = document.getElementById("chat");
+async function loadMessages() {
+  const res = await fetch("/messages");
+  const data = await res.json();
 
-function addMsg(text,type){
-chat.innerHTML += `
-<div class="msg ${type}">${text}</div>
-`;
-chat.scrollTop = chat.scrollHeight;
+  const box = document.getElementById("chat-box");
+  box.innerHTML = "";
+
+  data.forEach(msg => {
+    const div = document.createElement("div");
+    div.classList.add("msg");
+
+    if (msg.role === "user") {
+      div.classList.add("user");
+      div.innerText = "👤: " + msg.text;
+    } else {
+      div.classList.add("admin");
+      div.innerText = "👨🏻‍💻 ادمین: " + msg.text;
+    }
+
+    box.appendChild(div);
+  });
+
+  box.scrollTop = box.scrollHeight;
 }
 
-async function send(){
-let input = document.getElementById("msg");
-let text = input.value;
-if(!text) return;
+async function sendMessage() {
+  const input = document.getElementById("message");
+  const text = input.value;
 
-addMsg(text,"me");
-input.value="";
+  if (!text) return;
 
-const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  await fetch("/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text })
+  });
 
-try{
-await fetch("https://YOUR_SERVER_URL/sendMessage", {
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-message:text,
-user_id:userId
-})
-});
-
-addMsg("⏳ ارسال شد به پشتیبانی...","support");
-
-}catch(e){
-addMsg("❌ خطا در ارسال پیام","support");
+  input.value = "";
+  loadMessages();
 }
-}
+
+setInterval(loadMessages, 2000);
+loadMessages();
