@@ -5,7 +5,7 @@ async function sendMessage() {
 
     let user = Telegram.WebApp.initDataUnsafe.user;
 
-    await fetch("https://YOUR-SERVER-URL/send", {
+    await fetch("https://webapp-chat-production.up.railway.app/send", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
