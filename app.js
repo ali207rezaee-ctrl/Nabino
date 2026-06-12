@@ -7,20 +7,22 @@ async function loadMessages() {
   const box = document.getElementById("chat-box");
   box.innerHTML = "";
 
-  data.forEach(msg => {
+  data.forEach(m => {
     const div = document.createElement("div");
     div.classList.add("msg");
 
-    if (msg.role === "user") {
+    if (m.role === "user") {
       div.classList.add("user");
-      div.innerText = "👤: " + msg.text;
+      div.innerText = "👤: " + m.text;
     } else {
       div.classList.add("admin");
-      div.innerText = "👨🏻‍💻: " + msg.text;
+      div.innerText = "👨🏻‍💻: " + m.text;
     }
 
     box.appendChild(div);
   });
+
+  box.scrollTop = box.scrollHeight;
 }
 
 async function sendMessage() {
