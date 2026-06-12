@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nabino Crypto Pro</title>
+<title>Nabino Crypto Super App</title>
 
 <style>
 body{
 margin:0;
 font-family:tahoma;
-overflow:hidden;
 background:#0b001a;
+overflow:hidden;
 color:white;
 }
 
@@ -22,51 +22,67 @@ left:0;
 z-index:-1;
 }
 
+/* 📱 APP */
 #app{
-position:relative;
 width:360px;
+height:640px;
 margin:auto;
-padding:15px;
+position:relative;
+overflow:hidden;
+border-radius:20px;
+background:rgba(20,0,40,0.6);
+backdrop-filter: blur(10px);
+box-shadow:0 0 30px #a855f7;
 }
 
-h1{
-text-align:center;
-color:#c084fc;
-text-shadow:0 0 20px #a855f7;
-}
-
-/* 🔎 SEARCH */
-input{
-width:100%;
+/* PAGES */
+.page{
+display:none;
+height:560px;
+overflow:auto;
 padding:10px;
-border-radius:10px;
-border:none;
-margin-top:10px;
-outline:none;
+}
+.active{display:block;}
+
+/* TOP BAR */
+h2{
+text-align:center;
+color:#d8b4fe;
+text-shadow:0 0 10px #a855f7;
 }
 
-/* 💎 CARD */
+/* CARD */
 .card{
 background:rgba(255,255,255,0.06);
-margin:10px 0;
-padding:12px;
+padding:10px;
+margin:8px 0;
 border-radius:12px;
-backdrop-filter: blur(10px);
-box-shadow:0 0 10px rgba(168,85,247,0.3);
+cursor:pointer;
 transition:0.2s;
 }
-
-.card:hover{
-transform:scale(1.02);
-}
-
-.price{
-font-size:16px;
-font-weight:bold;
-}
+.card:active{transform:scale(0.97);}
 
 .up{color:#22c55e}
 .down{color:#ef4444}
+
+/* NAV */
+#nav{
+position:absolute;
+bottom:0;
+width:100%;
+display:flex;
+justify-content:space-around;
+background:rgba(0,0,0,0.4);
+padding:10px 0;
+}
+
+.nav-btn{
+color:white;
+font-size:12px;
+cursor:pointer;
+opacity:0.7;
+}
+.nav-btn.active{opacity:1;color:#c084fc;}
 </style>
 </head>
 
@@ -76,121 +92,128 @@ font-weight:bold;
 
 <div id="app">
 
-<h1>💜 نابینو کریپتو PRO</h1>
+<!-- HOME -->
+<div id="home" class="page active">
+<h2>📊 بازار کریپتو</h2>
+<div id="market"></div>
+</div>
 
-<input id="search" placeholder="جستجوی ارز (bitcoin, ethereum ...)">
-<button onclick="searchCoin()">جستجو</button>
-
+<!-- SEARCH -->
+<div id="search" class="page">
+<h2>🔍 جستجو</h2>
+<input id="input" placeholder="bitcoin, ethereum ..." style="width:100%;padding:10px;border-radius:10px;">
+<button onclick="searchCoin()" style="width:100%;margin-top:10px;padding:10px;background:#a855f7;color:white;border:none;border-radius:10px;">جستجو</button>
 <div id="result"></div>
+</div>
 
-<h3>📊 بازار زنده</h3>
-<div id="list"></div>
+<!-- WATCHLIST -->
+<div id="watch" class="page">
+<h2>⭐ واچ لیست</h2>
+<div id="watchlist"></div>
+</div>
+
+<!-- DETAILS -->
+<div id="detail" class="page">
+<h2>📊 جزئیات</h2>
+<div id="detailBox"></div>
+</div>
+
+<!-- NAV -->
+<div id="nav">
+<div class="nav-btn active" onclick="show('home')">🏠</div>
+<div class="nav-btn" onclick="show('search')">🔍</div>
+<div class="nav-btn" onclick="show('watch')">⭐</div>
+</div>
 
 </div>
 
 <script>
 
-/* 🌌 LIVE BACKGROUND */
-const canvas = document.getElementById("bg");
-const ctx = canvas.getContext("2d");
+/* 🌌 BACKGROUND */
+const c=document.getElementById("bg");
+const ctx=c.getContext("2d");
+c.width=window.innerWidth;
+c.height=window.innerHeight;
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-let dots = [];
-
-for(let i=0;i<80;i++){
-dots.push({
-x:Math.random()*canvas.width,
-y:Math.random()*canvas.height,
-r:Math.random()*2,
-dx:(Math.random()-0.5)*0.5,
-dy:(Math.random()-0.5)*0.5
-});
+let p=[];
+for(let i=0;i<70;i++){
+p.push({x:Math.random()*c.width,y:Math.random()*c.height,r:1.5});
 }
 
-function animate(){
-ctx.clearRect(0,0,canvas.width,canvas.height);
-
-for(let d of dots){
+function draw(){
+ctx.clearRect(0,0,c.width,c.height);
+for(let i of p){
+ctx.fillStyle="#a855f7";
 ctx.beginPath();
-ctx.fillStyle="rgba(168,85,247,0.6)";
-ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+ctx.arc(i.x,i.y,i.r,0,Math.PI*2);
 ctx.fill();
-
-d.x += d.dx;
-d.y += d.dy;
-
-if(d.x<0||d.x>canvas.width) d.dx*=-1;
-if(d.y<0||d.y>canvas.height) d.dy*=-1;
+i.y+=0.4;
+if(i.y>c.height)i.y=0;
 }
-
-requestAnimationFrame(animate);
+requestAnimationFrame(draw);
 }
-animate();
+draw();
 
-/* 💰 COIN DATA */
-const coins = [
-"bitcoin","ethereum","solana","tether","dogecoin",
-"cardano","tron","ripple","polkadot","litecoin"
-];
+/* DATA */
+const coins=["bitcoin","ethereum","solana","tether","dogecoin","tron","cardano"];
 
-async function fetchPrices(){
-const res = await fetch(
-`https://api.coingecko.com/api/v3/simple/price?ids=${coins.join(",")}&vs_currencies=usd&include_24hr_change=true`
-);
-return await res.json();
-}
+let watch=JSON.parse(localStorage.getItem("watch")||"[]");
 
-function render(data){
-const list = document.getElementById("list");
-list.innerHTML = "";
+async function loadMarket(){
+let res=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coins.join(",")}&vs_currencies=usd&include_24hr_change=true`);
+let data=await res.json();
+
+let box=document.getElementById("market");
+box.innerHTML="";
 
 Object.keys(data).forEach(c=>{
-let change = data[c].usd_24h_change.toFixed(2);
-let color = change>=0?"up":"down";
-
-list.innerHTML += `
-<div class="card">
-<div class="price">${c.toUpperCase()}</div>
-<div>$${data[c].usd}</div>
-<div class="${color}">${change}%</div>
+let ch=data[c].usd_24h_change.toFixed(2);
+box.innerHTML+=`
+<div class="card" onclick="openDetail('${c}')">
+<b>${c.toUpperCase()}</b><br>
+$${data[c].usd}<br>
+<span class="${ch>=0?'up':'down'}">${ch}%</span>
 </div>
 `;
 });
 }
 
-async function load(){
-const data = await fetchPrices();
-render(data);
-}
-load();
-setInterval(load,10000);
-
-/* 🔎 SEARCH */
+/* SEARCH */
 async function searchCoin(){
-let coin=document.getElementById("search").value;
-if(!coin) return;
-
-try{
-let res=await fetch(
-`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd&include_24hr_change=true`
-);
-
-let data=await res.json();
+let id=document.getElementById("input").value;
+let res=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`);
+let d=await res.json();
 
 document.getElementById("result").innerHTML=`
 <div class="card">
-<div class="price">${coin.toUpperCase()}</div>
-<div>$${data[coin].usd}</div>
-<div>${data[coin].usd_24h_change.toFixed(2)}%</div>
-</div>
-`;
-}catch(e){
-document.getElementById("result").innerHTML=
-"<div class='card'>ارز پیدا نشد ❌</div>";
+<b>${id}</b><br>
+$${d[id].usd}<br>
+${d[id].usd_24h_change.toFixed(2)}%
+</div>`;
 }
+
+/* DETAIL */
+function openDetail(id){
+show('detail');
+document.getElementById("detailBox").innerHTML=`
+<div class="card">
+<b>${id.toUpperCase()}</b>
+<p>Loading chart...</p>
+</div>`;
 }
+
+/* NAV */
+function show(p){
+document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+document.getElementById(p).classList.add("active");
+
+document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("active"));
+event.target.classList.add("active");
+}
+
+/* INIT */
+loadMarket();
+setInterval(loadMarket,10000);
 
 </script>
 
