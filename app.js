@@ -1,3 +1,5 @@
+const user_id = Telegram.WebApp.initDataUnsafe.user.id;
+
 async function loadMessages() {
   const res = await fetch("/messages");
   const data = await res.json();
@@ -14,25 +16,25 @@ async function loadMessages() {
       div.innerText = "👤: " + msg.text;
     } else {
       div.classList.add("admin");
-      div.innerText = "👨🏻‍💻 ادمین: " + msg.text;
+      div.innerText = "👨🏻‍💻: " + msg.text;
     }
 
     box.appendChild(div);
   });
-
-  box.scrollTop = box.scrollHeight;
 }
 
 async function sendMessage() {
   const input = document.getElementById("message");
-  const text = input.value;
 
-  if (!text) return;
+  if (!input.value) return;
 
   await fetch("/send", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text })
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      text: input.value,
+      user_id: user_id
+    })
   });
 
   input.value = "";
