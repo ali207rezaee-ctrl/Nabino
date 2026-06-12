@@ -1,0 +1,77 @@
+body{
+margin:0;
+font-family:tahoma;
+background:#0b0b14;
+color:white;
+height:100vh;
+overflow:hidden;
+}
+
+/* HEADER */
+.header{
+padding:15px;
+text-align:center;
+background:rgba(255,255,255,0.05);
+color:#c084fc;
+}
+
+/* CHAT */
+.chat{
+height:75vh;
+overflow:auto;
+padding:10px;
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+/* MSG */
+.msg{
+max-width:75%;
+padding:10px;
+border-radius:12px;
+font-size:14px;
+animation:pop 0.2s ease;
+}
+
+@keyframes pop{
+from{transform:scale(0.9);opacity:0;}
+to{transform:scale(1);opacity:1;}
+}
+
+.me{
+background:#7c3aed;
+align-self:flex-end;
+}
+
+.support{
+background:rgba(255,255,255,0.08);
+align-self:flex-start;
+}
+
+/* INPUT */
+.inputBox{
+position:fixed;
+bottom:0;
+width:100%;
+display:flex;
+gap:8px;
+padding:10px;
+background:rgba(0,0,0,0.6);
+}
+
+input{
+flex:1;
+padding:10px;
+border:none;
+border-radius:10px;
+outline:none;
+}
+
+button{
+padding:10px 15px;
+background:#7c3aed;
+border:none;
+border-radius:10px;
+color:white;
+}
