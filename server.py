@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
-import requests
 import json
 import os
+import requests
 
 app = Flask(__name__)
 
@@ -24,26 +24,12 @@ def save_chat(data):
 chat = load_chat()
 
 
-# ارسال پیام به تلگرام ادمین
-def send_to_telegram(user_id, text):
-    msg = f"📩 پیام جدید WebApp\n\n🆔 User: {user_id}\n💬 {text}"
-
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-
-    requests.post(url, json={
-        "chat_id": ADMIN_ID,
-        "text": msg,
-        "reply_markup": {
-            "force_reply": True
-        }
-    })
-
-
+# ذخیره پیام کاربر از WebApp
 @app.route("/send", methods=["POST"])
 def send():
     data = request.json
-    text = data.get("text")
-    user_id = data.get("user_id")
+    text = data["text"]
+    user_id = data["user_id"]
 
     chat.append({
         "role": "user",
@@ -53,61 +39,126 @@ def send():
 
     save_chat(chat)
 
-    send_to_telegram(user_id, text)
+    # ارسال به تلگرام ادمین با دکمه جواب
+    send_to_admin(text, user_id)
 
     return {"ok": True}
 
 
+# لیست پیام‌ها برای WebApp
 @app.route("/messages")
 def messages():
     return jsonify(chat)
 
 
-# وقتی ادمین در تلگرام reply می‌کند
+# ارسال به تلگرام ادمین با دکمه ریپلای
+def send_to_admin(text, user_id):
+
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+    requests.post(url, json={
+        "chat_id": ADMIN_ID,
+        "text": f"📩 پیام جدید\n\n🆔 {user_id}\n💬 {text}",
+        "reply_markup": {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "💬 پاسخ به این کاربر",
+                        "callback_data": f"reply:{user_id}"
+                    }
+                ]
+            ]
+        }
+    })
+
+
+# پاسخ ادمین از تلگرام
 @app.route("/telegram-webhook", methods=["POST"])
 def telegram_webhook():
     update = request.json
 
-    if "message" not in update:
-        return {"ok": True}
+    if "callback_query" in update:
+        cq = update["callback_query"]
+        data = cq["data"]
 
-    message = update["message"]
+        if data.startswith("reply:"):
+            user_id = data.split(":")[1]
 
-    # فقط ریپلای ادمین
-    if "reply_to_message" not in message:
-        return {"ok": True}
+            # درخواست جواب از ادمین
+            send_telegram_message(
+                ADMIN_ID,
+                f"✍️ پاسخ خود را برای کاربر {user_id} ارسال کنید (Reply کنید)"
+            )
 
-    if str(message["from"]["id"]) != str(ADMIN_ID):
-        return {"ok": True}
+            # ذخیره حالت انتظار (ساده)
+            save_pending(user_id)
 
-    admin_text = message["text"]
+    if "message" in update:
+        msg = update["message"]
 
-    # استخراج user_id از متن پیام قبلی
-    original = message["reply_to_message"]["text"]
+        if str(msg["from"]["id"]) != str(ADMIN_ID):
+            return {"ok": True}
 
-    try:
-        user_id_line = [line for line in original.split("\n") if "User:" in line][0]
-        user_id = user_id_line.replace("🆔 User:", "").strip()
-    except:
-        return {"ok": True}
+        # اگر reply بود → ارسال جواب
+        if "reply_to_message" in msg:
+            admin_text = msg["text"]
 
-    chat.append({
-        "role": "admin",
-        "text": admin_text,
-        "user_id": user_id
-    })
+            pending = load_pending()
 
-    save_chat(chat)
+            if not pending:
+                return {"ok": True}
 
-    # ارسال جواب به کاربر داخل WebApp
+            user_id = pending[-1]
+
+            chat.append({
+                "role": "admin",
+                "text": admin_text,
+                "user_id": user_id
+            })
+
+            save_chat(chat)
+
+            # ارسال به کاربر
+            send_user(user_id, admin_text)
+
+            clear_pending()
+
+    return {"ok": True}
+
+
+def send_user(user_id, text):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
     requests.post(url, json={
         "chat_id": user_id,
-        "text": f"👨🏻‍💻 پاسخ پشتیبانی:\n\n{admin_text}"
+        "text": f"👨🏻‍💻 پاسخ پشتیبانی:\n\n{text}"
     })
 
-    return {"ok": True}
+
+def send_telegram_message(chat_id, text):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+    requests.post(url, json={
+        "chat_id": chat_id,
+        "text": text
+    })
+
+
+# ساده‌ترین سیستم pending
+def save_pending(user_id):
+    with open("pending.json", "w") as f:
+        json.dump({"user_id": user_id}, f)
+
+def load_pending():
+    try:
+        with open("pending.json", "r") as f:
+            return json.load(f)["user_id"]
+    except:
+        return None
+
+def clear_pending():
+    if os.path.exists("pending.json"):
+        os.remove("pending.json")
 
 
 if __name__ == "__main__":
