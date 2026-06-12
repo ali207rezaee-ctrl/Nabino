@@ -1,212 +1,160 @@
-<!DOCTYPE html><html lang="fa" dir="rtl">
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>سفر فضایی نابینو</title><style>
+<title>نابینو | Crypto Dashboard</title>
+
+<style>
 body{
 margin:0;
-background:linear-gradient(#0b001a,#2a004f);
 font-family:tahoma;
+background:linear-gradient(#120022,#2a004f);
 color:white;
 display:flex;
 justify-content:center;
-align-items:center;
-height:100vh;
-overflow:hidden;
 }
 
-#game{
+#app{
 width:360px;
-height:640px;
-background:radial-gradient(circle at top,#3a0a66,#0b001a);
-border-radius:20px;
-box-shadow:0 0 30px #a855f7;
-position:relative;
-overflow:hidden;
+min-height:640px;
 padding:15px;
 }
 
 h1{
 text-align:center;
-text-shadow:0 0 10px #fff;
+color:#d6a3ff;
+text-shadow:0 0 10px #a855f7;
+}
+
+.card{
+background:rgba(255,255,255,0.06);
+padding:12px;
+margin:10px 0;
+border-radius:12px;
+box-shadow:0 0 10px rgba(168,85,247,0.3);
+}
+
+.price{
+font-size:18px;
+font-weight:bold;
+}
+
+.up{color:#22c55e}
+.down{color:#ef4444}
+
+input{
+width:100%;
+padding:10px;
+border-radius:10px;
+border:none;
+margin-top:10px;
+outline:none;
 }
 
 button{
 width:100%;
-padding:12px;
+padding:10px;
 margin-top:10px;
 border:none;
-border-radius:12px;
+border-radius:10px;
 background:#a855f7;
 color:white;
-font-size:16px;
 }
 
-.choice{
-margin-top:10px;
-padding:12px;
-background:#2e1065;
-border-radius:12px;
-cursor:pointer;
-text-align:center;
+.small{
+font-size:13px;
+opacity:0.8;
 }
+</style>
+</head>
 
-#text{
-margin-top:20px;
-line-height:1.8;
-min-height:120px;
-}
+<body>
 
-#stats{
-position:absolute;
-bottom:10px;
-left:0;
-right:0;
-text-align:center;
-font-size:14px;
-opacity:0.9;
-}
-</style></head><body><div id="game">
-<h1>🚀 سفر فضایی نابینو</h1><div id="text">در حال آماده‌سازی سفینه...</div><div id="choices"></div><div id="stats"></div><button onclick="startGame()">شروع ماجراجویی</button>
+<div id="app">
 
-</div><script>
+<h1>💜 نابینو کریپتو</h1>
 
-// ---------- AUDIO ----------
-let audioCtx;
-function beep(freq,duration=0.1,type="sine"){
-if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+<input id="search" placeholder="جستجوی ارز (مثل bitcoin)">
+<button onclick="searchCoin()">جستجو</button>
 
-let osc = audioCtx.createOscillator();
-let gain = audioCtx.createGain();
+<div id="result"></div>
 
-osc.type = type;
-osc.frequency.value = freq;
+<h3>📊 ارزهای اصلی</h3>
 
-gain.gain.value = 0.05;
+<div id="list"></div>
 
-osc.connect(gain);
-gain.connect(audioCtx.destination);
+</div>
 
-osc.start();
-osc.stop(audioCtx.currentTime + duration);
-}
+<script>
 
-// ---------- GAME STATE ----------
-let state;
-
-function startGame(){
-beep(440);
-
-state = {
-fuel: 100,
-step: 0,
-alive: true
-};
-
-nextStep();
-}
-
-// ---------- EVENTS ----------
-const events = [
-{
-text:"💥 شهاب‌سنگ نزدیک شد!",
-choices:[
-{t:"انحراف سریع", f:-5, n:1},
-{t:"استفاده از سپر", f:-10, n:2}
-]
-},
-{
-text:"🪐 سیاره ناشناخته دیده شد",
-choices:[
-{t:"فرود بیا", f:-15, n:2},
-{t:"ادامه مسیر", f:-5, n:1}
-]
-},
-{
-text:"⚡ طوفان فضایی!",
-choices:[
-{t:"عبور مستقیم", f:-20, n:2},
-{t:"صبر کن", f:-10, n:1}
-]
-},
-{
-text:"👽 سیگنال ناشناس دریافت شد",
-choices:[
-{t:"پاسخ بده", f:-10, n:1},
-{t:"نادیده بگیر", f:-5, n:1}
-]
-},
-{
-text:"🛸 کشف مسیر کوتاه‌تر!",
-choices:[
-{t:"استفاده کن", f:-10, n:2},
-{t:"مسیر امن", f:-5, n:1}
-]
-}
+const coins = [
+"bitcoin",
+"ethereum",
+"solana",
+"tether"
 ];
 
-function nextStep(){
-
-if(state.fuel <= 0){
-return endGame("سوخت تمام شد 💀");
+async function fetchPrice(ids){
+const res = await fetch(
+`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
+);
+return await res.json();
 }
 
-if(state.step >= 15){
-return endGame("به زمین رسیدی 🟢 موفق شدی!");
-}
+function render(data){
+const list = document.getElementById("list");
+list.innerHTML = "";
 
-let e = events[Math.floor(Math.random()*events.length)];
-state.current = e;
+Object.keys(data).forEach(key=>{
 
-render(e);
-updateStats();
-}
+let change = data[key].usd_24h_change.toFixed(2);
+let color = change >= 0 ? "up" : "down";
 
-// ---------- RENDER ----------
-function render(event){
-
-document.getElementById("text").innerHTML = event.text;
-
-let box = document.getElementById("choices");
-box.innerHTML = "";
-
-event.choices.forEach(c=>{
-let div = document.createElement("div");
-div.className = "choice";
-div.innerText = c.t;
-
-div.onclick = ()=>{
-beep(600);
-
-state.fuel += c.f;
-state.step++;
-
-nextStep();
-};
-
-box.appendChild(div);
+list.innerHTML += `
+<div class="card">
+<div class="price">${key.toUpperCase()}</div>
+<div>$${data[key].usd}</div>
+<div class="${color}">${change}%</div>
+</div>
+`;
 });
 }
 
-// ---------- STATS ----------
-function updateStats(){
-document.getElementById("stats").innerText =
-"🔋 سوخت: " + state.fuel + " | 🌌 مرحله: " + state.step;
+async function load(){
+const data = await fetchPrice(coins.join(","));
+render(data);
 }
 
-// ---------- END ----------
-function endGame(msg){
-beep(200,0.3,"sawtooth");
+load();
+setInterval(load,15000);
 
-document.getElementById("text").innerHTML =
-"💥 " + msg;
+async function searchCoin(){
+let coin = document.getElementById("search").value.toLowerCase();
 
-document.getElementById("choices").innerHTML = `
-<button onclick="startGame()">🔄 شروع دوباره</button>
+if(!coin) return;
+
+try{
+const data = await fetch(
+`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd&include_24hr_change=true`
+);
+
+const json = await data.json();
+
+document.getElementById("result").innerHTML = `
+<div class="card">
+<div class="price">${coin.toUpperCase()}</div>
+<div>$${json[coin].usd}</div>
+<div>${json[coin].usd_24h_change.toFixed(2)}%</div>
+</div>
 `;
-
-document.getElementById("stats").innerHTML = "";
+}catch(e){
+document.getElementById("result").innerHTML =
+"<div class='card'>ارز پیدا نشد ❌</div>";
+}
 }
 
-</script></body>
+</script>
+
+</body>
 </html>
