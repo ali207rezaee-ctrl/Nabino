@@ -1,385 +1,212 @@
 <!DOCTYPE html><html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>نابینو</title><style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:tahoma,sans-serif;
-}
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سفر فضایی نابینو</title><style>
 body{
-background:#2a0050;
-overflow:hidden;
+margin:0;
+background:linear-gradient(#0b001a,#2a004f);
+font-family:tahoma;
+color:white;
 display:flex;
 justify-content:center;
 align-items:center;
 height:100vh;
+overflow:hidden;
 }
 
-#gameContainer{
-position:relative;
+#game{
 width:360px;
 height:640px;
-overflow:hidden;
+background:radial-gradient(circle at top,#3a0a66,#0b001a);
 border-radius:20px;
-background:linear-gradient(to bottom,#5f1b99,#2b004f);
-box-shadow:0 0 25px rgba(180,80,255,.6);
-}
-
-canvas{
-display:block;
-}
-
-#startScreen,
-#gameOver{
-position:absolute;
-inset:0;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-background:rgba(0,0,0,.45);
-color:white;
-z-index:10;
-text-align:center;
-padding:20px;
-}
-
-.hidden{
-display:none !important;
+box-shadow:0 0 30px #a855f7;
+position:relative;
+overflow:hidden;
+padding:15px;
 }
 
 h1{
-font-size:42px;
-margin-bottom:15px;
-text-shadow:0 0 15px #d29cff;
+text-align:center;
+text-shadow:0 0 10px #fff;
 }
 
 button{
+width:100%;
+padding:12px;
+margin-top:10px;
 border:none;
-padding:12px 25px;
 border-radius:12px;
-font-size:18px;
-cursor:pointer;
-background:#a84cff;
+background:#a855f7;
 color:white;
-margin-top:15px;
+font-size:16px;
 }
 
-button:active{
-transform:scale(.97);
+.choice{
+margin-top:10px;
+padding:12px;
+background:#2e1065;
+border-radius:12px;
+cursor:pointer;
+text-align:center;
 }
 
-#scoreBox{
+#text{
+margin-top:20px;
+line-height:1.8;
+min-height:120px;
+}
+
+#stats{
 position:absolute;
-top:10px;
+bottom:10px;
 left:0;
 right:0;
 text-align:center;
-color:#fff;
-font-size:24px;
-font-weight:bold;
-text-shadow:0 0 10px #fff;
-z-index:5;
+font-size:14px;
+opacity:0.9;
 }
-
-#message{
-position:absolute;
-top:70px;
-width:100%;
-text-align:center;
-color:#fff;
-font-size:22px;
-font-weight:bold;
-text-shadow:0 0 10px #fff;
-z-index:5;
-}
-</style></head><body><div id="gameContainer"><div id="scoreBox">0</div>
-<div id="message"></div><div id="startScreen">
-<h1>نابینو</h1>
-<p>برای پرواز لمس کن</p>
-<button onclick="startGame()">شروع بازی</button>
-</div><div id="gameOver" class="hidden">
-<h2>بازی تمام شد 😅</h2>
-<br>
-<p id="finalScore"></p>
-<p id="bestScore"></p>
-<button onclick="restartGame()">شروع مجدد</button>
-</div><canvas id="game" width="360" height="640"></canvas>
+</style></head><body><div id="game">
+<h1>🚀 سفر فضایی نابینو</h1><div id="text">در حال آماده‌سازی سفینه...</div><div id="choices"></div><div id="stats"></div><button onclick="startGame()">شروع ماجراجویی</button>
 
 </div><script>
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+// ---------- AUDIO ----------
+let audioCtx;
+function beep(freq,duration=0.1,type="sine"){
+if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-const scoreBox = document.getElementById("scoreBox");
-const messageBox = document.getElementById("message");
+let osc = audioCtx.createOscillator();
+let gain = audioCtx.createGain();
 
-let bird;
-let pipes;
-let score;
-let gameRunning=false;
-let animation;
+osc.type = type;
+osc.frequency.value = freq;
 
-const messages=[
-"عالیه! 🟣",
-"نابی شدی! 💜",
-"ترکوندی! 🚀",
-"ادامه بده! 🔥",
-"قهرمان ناب! 👑",
-"فوق‌العاده بود! ⭐",
-"دمت گرم! 😎"
-];
+gain.gain.value = 0.05;
 
-function init(){
+osc.connect(gain);
+gain.connect(audioCtx.destination);
 
-bird={
-x:90,
-y:250,
-size:18,
-velocity:0
-};
-
-pipes=[];
-
-score=0;
-
-scoreBox.innerText="0";
-
-for(let i=0;i<3;i++){
-
-createPipe(450+(i*220));
-
-}
+osc.start();
+osc.stop(audioCtx.currentTime + duration);
 }
 
-function createPipe(x){
-
-const gap=150;
-
-const topHeight=
-Math.random()*220+80;
-
-pipes.push({
-x:x,
-top:topHeight,
-bottom:topHeight+gap,
-passed:false
-});
-
-}
+// ---------- GAME STATE ----------
+let state;
 
 function startGame(){
+beep(440);
 
-document
-.getElementById("startScreen")
-.classList.add("hidden");
+state = {
+fuel: 100,
+step: 0,
+alive: true
+};
 
-document
-.getElementById("gameOver")
-.classList.add("hidden");
-
-init();
-
-gameRunning=true;
-
-update();
-
+nextStep();
 }
 
-function restartGame(){
-
-cancelAnimationFrame(animation);
-
-startGame();
-
-}
-
-function update(){
-
-if(!gameRunning) return;
-
-animation=requestAnimationFrame(update);
-
-ctx.clearRect(
-0,
-0,
-canvas.width,
-canvas.height
-);
-
-bird.velocity+=0.4;
-bird.y+=bird.velocity;
-
-ctx.beginPath();
-ctx.fillStyle="#d58cff";
-ctx.shadowBlur=15;
-ctx.shadowColor="#fff";
-ctx.arc(
-bird.x,
-bird.y,
-bird.size,
-0,
-Math.PI*2
-);
-ctx.fill();
-
-ctx.shadowBlur=0;
-
-for(let pipe of pipes){
-
-pipe.x-=3;
-
-ctx.fillStyle="#7b2dff";
-
-ctx.fillRect(
-pipe.x,
-0,
-55,
-pipe.top
-);
-
-ctx.fillRect(
-pipe.x,
-pipe.bottom,
-55,
-640-pipe.bottom
-);
-
-if(
-bird.x+bird.size>pipe.x &&
-bird.x-bird.size<pipe.x+55 &&
-(
-bird.y-bird.size<pipe.top ||
-bird.y+bird.size>pipe.bottom
-)
-){
-
-endGame();
-
-}
-
-if(
-!pipe.passed &&
-pipe.x+55<bird.x
-){
-
-pipe.passed=true;
-
-score++;
-
-scoreBox.innerText=score;
-
-if(score%2===0){
-
-showMessage(
-messages[
-Math.floor(
-Math.random()*
-messages.length
-)
+// ---------- EVENTS ----------
+const events = [
+{
+text:"💥 شهاب‌سنگ نزدیک شد!",
+choices:[
+{t:"انحراف سریع", f:-5, n:1},
+{t:"استفاده از سپر", f:-10, n:2}
 ]
-);
+},
+{
+text:"🪐 سیاره ناشناخته دیده شد",
+choices:[
+{t:"فرود بیا", f:-15, n:2},
+{t:"ادامه مسیر", f:-5, n:1}
+]
+},
+{
+text:"⚡ طوفان فضایی!",
+choices:[
+{t:"عبور مستقیم", f:-20, n:2},
+{t:"صبر کن", f:-10, n:1}
+]
+},
+{
+text:"👽 سیگنال ناشناس دریافت شد",
+choices:[
+{t:"پاسخ بده", f:-10, n:1},
+{t:"نادیده بگیر", f:-5, n:1}
+]
+},
+{
+text:"🛸 کشف مسیر کوتاه‌تر!",
+choices:[
+{t:"استفاده کن", f:-10, n:2},
+{t:"مسیر امن", f:-5, n:1}
+]
+}
+];
 
+function nextStep(){
+
+if(state.fuel <= 0){
+return endGame("سوخت تمام شد 💀");
 }
 
+if(state.step >= 15){
+return endGame("به زمین رسیدی 🟢 موفق شدی!");
 }
 
+let e = events[Math.floor(Math.random()*events.length)];
+state.current = e;
+
+render(e);
+updateStats();
 }
 
-if(
-pipes[0].x<-60
-){
+// ---------- RENDER ----------
+function render(event){
 
-pipes.shift();
+document.getElementById("text").innerHTML = event.text;
 
-createPipe(
-pipes[pipes.length-1].x+220
-);
+let box = document.getElementById("choices");
+box.innerHTML = "";
 
+event.choices.forEach(c=>{
+let div = document.createElement("div");
+div.className = "choice";
+div.innerText = c.t;
+
+div.onclick = ()=>{
+beep(600);
+
+state.fuel += c.f;
+state.step++;
+
+nextStep();
+};
+
+box.appendChild(div);
+});
 }
 
-if(
-bird.y<0 ||
-bird.y>640
-){
-
-endGame();
-
+// ---------- STATS ----------
+function updateStats(){
+document.getElementById("stats").innerText =
+"🔋 سوخت: " + state.fuel + " | 🌌 مرحله: " + state.step;
 }
 
+// ---------- END ----------
+function endGame(msg){
+beep(200,0.3,"sawtooth");
+
+document.getElementById("text").innerHTML =
+"💥 " + msg;
+
+document.getElementById("choices").innerHTML = `
+<button onclick="startGame()">🔄 شروع دوباره</button>
+`;
+
+document.getElementById("stats").innerHTML = "";
 }
-
-function showMessage(text){
-
-messageBox.innerText=text;
-
-setTimeout(()=>{
-messageBox.innerText="";
-},1200);
-
-}
-
-function endGame(){
-
-gameRunning=false;
-
-cancelAnimationFrame(animation);
-
-let best=
-localStorage.getItem("nabino_best") || 0;
-
-if(score>best){
-
-best=score;
-
-localStorage.setItem(
-"nabino_best",
-score
-);
-
-}
-
-document
-.getElementById("finalScore")
-.innerText=
-"امتیاز: "+score;
-
-document
-.getElementById("bestScore")
-.innerText=
-"رکورد: "+best;
-
-document
-.getElementById("gameOver")
-.classList.remove("hidden");
-
-}
-
-function flap(){
-
-if(!gameRunning) return;
-
-bird.velocity=-7;
-
-}
-
-canvas.addEventListener(
-"click",
-flap
-);
-
-document.addEventListener(
-"touchstart",
-()=>{
-if(gameRunning){
-bird.velocity=-7;
-}
-}
-);
 
 </script></body>
 </html>
