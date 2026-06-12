@@ -3,46 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>نابینو | Crypto Dashboard</title>
+<title>Nabino Crypto Pro</title>
 
 <style>
 body{
 margin:0;
 font-family:tahoma;
-background:linear-gradient(#120022,#2a004f);
+overflow:hidden;
+background:#0b001a;
 color:white;
-display:flex;
-justify-content:center;
+}
+
+/* 🌌 BACKGROUND */
+canvas{
+position:fixed;
+top:0;
+left:0;
+z-index:-1;
 }
 
 #app{
+position:relative;
 width:360px;
-min-height:640px;
+margin:auto;
 padding:15px;
 }
 
 h1{
 text-align:center;
-color:#d6a3ff;
-text-shadow:0 0 10px #a855f7;
+color:#c084fc;
+text-shadow:0 0 20px #a855f7;
 }
 
-.card{
-background:rgba(255,255,255,0.06);
-padding:12px;
-margin:10px 0;
-border-radius:12px;
-box-shadow:0 0 10px rgba(168,85,247,0.3);
-}
-
-.price{
-font-size:18px;
-font-weight:bold;
-}
-
-.up{color:#22c55e}
-.down{color:#ef4444}
-
+/* 🔎 SEARCH */
 input{
 width:100%;
 padding:10px;
@@ -52,52 +45,99 @@ margin-top:10px;
 outline:none;
 }
 
-button{
-width:100%;
-padding:10px;
-margin-top:10px;
-border:none;
-border-radius:10px;
-background:#a855f7;
-color:white;
+/* 💎 CARD */
+.card{
+background:rgba(255,255,255,0.06);
+margin:10px 0;
+padding:12px;
+border-radius:12px;
+backdrop-filter: blur(10px);
+box-shadow:0 0 10px rgba(168,85,247,0.3);
+transition:0.2s;
 }
 
-.small{
-font-size:13px;
-opacity:0.8;
+.card:hover{
+transform:scale(1.02);
 }
+
+.price{
+font-size:16px;
+font-weight:bold;
+}
+
+.up{color:#22c55e}
+.down{color:#ef4444}
 </style>
 </head>
 
 <body>
 
+<canvas id="bg"></canvas>
+
 <div id="app">
 
-<h1>💜 نابینو کریپتو</h1>
+<h1>💜 نابینو کریپتو PRO</h1>
 
-<input id="search" placeholder="جستجوی ارز (مثل bitcoin)">
+<input id="search" placeholder="جستجوی ارز (bitcoin, ethereum ...)">
 <button onclick="searchCoin()">جستجو</button>
 
 <div id="result"></div>
 
-<h3>📊 ارزهای اصلی</h3>
-
+<h3>📊 بازار زنده</h3>
 <div id="list"></div>
 
 </div>
 
 <script>
 
+/* 🌌 LIVE BACKGROUND */
+const canvas = document.getElementById("bg");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let dots = [];
+
+for(let i=0;i<80;i++){
+dots.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height,
+r:Math.random()*2,
+dx:(Math.random()-0.5)*0.5,
+dy:(Math.random()-0.5)*0.5
+});
+}
+
+function animate(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+for(let d of dots){
+ctx.beginPath();
+ctx.fillStyle="rgba(168,85,247,0.6)";
+ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+ctx.fill();
+
+d.x += d.dx;
+d.y += d.dy;
+
+if(d.x<0||d.x>canvas.width) d.dx*=-1;
+if(d.y<0||d.y>canvas.height) d.dy*=-1;
+}
+
+requestAnimationFrame(animate);
+}
+animate();
+
+/* 💰 COIN DATA */
 const coins = [
-"bitcoin",
-"ethereum",
-"solana",
-"tether"
+"bitcoin","ethereum","solana","tether","dogecoin",
+"cardano","tron","ripple","polkadot","litecoin"
 ];
 
-async function fetchPrice(ids){
+async function fetchPrices(){
 const res = await fetch(
-`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
+`https://api.coingecko.com/api/v3/simple/price?ids=${coins.join(",")}&vs_currencies=usd&include_24hr_change=true`
 );
 return await res.json();
 }
@@ -106,15 +146,14 @@ function render(data){
 const list = document.getElementById("list");
 list.innerHTML = "";
 
-Object.keys(data).forEach(key=>{
-
-let change = data[key].usd_24h_change.toFixed(2);
-let color = change >= 0 ? "up" : "down";
+Object.keys(data).forEach(c=>{
+let change = data[c].usd_24h_change.toFixed(2);
+let color = change>=0?"up":"down";
 
 list.innerHTML += `
 <div class="card">
-<div class="price">${key.toUpperCase()}</div>
-<div>$${data[key].usd}</div>
+<div class="price">${c.toUpperCase()}</div>
+<div>$${data[c].usd}</div>
 <div class="${color}">${change}%</div>
 </div>
 `;
@@ -122,34 +161,33 @@ list.innerHTML += `
 }
 
 async function load(){
-const data = await fetchPrice(coins.join(","));
+const data = await fetchPrices();
 render(data);
 }
-
 load();
-setInterval(load,15000);
+setInterval(load,10000);
 
+/* 🔎 SEARCH */
 async function searchCoin(){
-let coin = document.getElementById("search").value.toLowerCase();
-
+let coin=document.getElementById("search").value;
 if(!coin) return;
 
 try{
-const data = await fetch(
+let res=await fetch(
 `https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd&include_24hr_change=true`
 );
 
-const json = await data.json();
+let data=await res.json();
 
-document.getElementById("result").innerHTML = `
+document.getElementById("result").innerHTML=`
 <div class="card">
 <div class="price">${coin.toUpperCase()}</div>
-<div>$${json[coin].usd}</div>
-<div>${json[coin].usd_24h_change.toFixed(2)}%</div>
+<div>$${data[coin].usd}</div>
+<div>${data[coin].usd_24h_change.toFixed(2)}%</div>
 </div>
 `;
 }catch(e){
-document.getElementById("result").innerHTML =
+document.getElementById("result").innerHTML=
 "<div class='card'>ارز پیدا نشد ❌</div>";
 }
 }
