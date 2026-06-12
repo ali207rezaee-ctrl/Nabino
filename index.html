@@ -1,32 +1,28 @@
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>چت پشتیبانی ناب</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-<script>
-const tg = window.Telegram.WebApp;
-tg.ready();
-tg.expand();
+<div class="chat-container">
 
-async function sendMessage() {
-    let text = document.getElementById("msg").value;
+  <div class="header">
+    💬 پشتیبانی آنلاین
+  </div>
 
-    const res = await fetch("/chat", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            text: text,
-            user_id: tg.initDataUnsafe.user.id
-        })
-    });
+  <div id="chat-box"></div>
 
-    const data = await res.json();
+  <div class="input-area">
+    <input id="message" type="text" placeholder="پیام خود را بنویسید..." />
+    <button onclick="sendMessage()">ارسال</button>
+  </div>
 
-    document.getElementById("chat").innerHTML += `
-        <p><b>تو:</b> ${text}</p>
-        <p><b>ربات:</b> ${data.reply}</p>
-    `;
-}
-</script>
+</div>
 
-<input id="msg" placeholder="پیام..." />
-<button onclick="sendMessage()">ارسال</button>
-
-<div id="chat"></div>
+<script src="app.js"></script>
+</body>
+</html>
