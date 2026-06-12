@@ -1,20 +1,32 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nabino Support</title>
-<link rel="stylesheet" href="style.css">
-</head>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-<body>
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
 
-<div class="center">
-<h1>💜 نابینو</h1>
-<p>پشتیبانی آنلاین</p>
+async function sendMessage() {
+    let text = document.getElementById("msg").value;
 
-<a class="btn" href="support.html">ورود به چت</a>
-</div>
+    const res = await fetch("/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            text: text,
+            user_id: tg.initDataUnsafe.user.id
+        })
+    });
 
-</body>
-</html>
+    const data = await res.json();
+
+    document.getElementById("chat").innerHTML += `
+        <p><b>تو:</b> ${text}</p>
+        <p><b>ربات:</b> ${data.reply}</p>
+    `;
+}
+</script>
+
+<input id="msg" placeholder="پیام..." />
+<button onclick="sendMessage()">ارسال</button>
+
+<div id="chat"></div>
